@@ -40,8 +40,8 @@ The knowledge graph includes:
 
 1. **Clone this repository**
    ```bash
-   git clone https://github.com/dkt2025/hybe-knowledge-graph.git
-   cd hybe-knowledge-graph
+   git clone https://github.com/dkt2025/Article2Neo4J.git
+   cd Article2Neo4J
    ```
 
 2. **Create a Neo4J Aura database**
@@ -72,7 +72,7 @@ The knowledge graph includes:
 ## 📁 Repository Structure
 
 ```
-hybe-knowledge-graph/
+Article2Neo4J/
 ├── index.html              # Main visualization page
 ├── styles.css              # Styling
 ├── app.js                  # Visualization logic
@@ -172,7 +172,7 @@ If you use this knowledge graph in your research or project, please cite:
   title = {Article2Neo4J},
   year = {2025},
   publisher = {GitHub},
-  url = {https://github.com/dkt2025/hybe-knowledge-graph}
+  url = {https://github.com/dkt2025/Article2Neo4J}
 }
 ```
 
