@@ -352,4 +352,4 @@ function loadCorporateStructure() {
 // Initialize on page load
 console.log('🎵 HYBE Knowledge Graph Viewer loaded');
 console.log('📊 Created by @dkt2025');
-console.log('🔗 GitHub: https://github.com/dkt2025/hybe-knowledge-graph');
+console.log('🔗 GitHub: https://github.com/dkt2025/Article2Neo4J');
