@@ -1,8 +1,271 @@
-// Global variables
-let viz;
-let config;
+// Article2Neo4J - Interactive Knowledge Graph Visualization
+// Demo: HYBE Ownership Structure
+// Using Vis.js for client-side rendering
+// Created by @dkt2025
 
-// Utility function to hide loading spinner
+let network;
+let allNodes;
+let allEdges;
+let originalData;
+
+// Color scheme
+const colors = {
+    Organization: '#4287f5',
+    Person: '#f54242',
+    Group: '#f542e0',
+    Product: '#42f5d7',
+    Event: '#f5d742',
+    Concept: '#a442f5',
+    Topic: '#f5a442'
+};
+
+const edgeColors = {
+    OWNS_SHARES_IN: '#42f5a1',
+    SUBSIDIARY_OF: '#f5a442',
+    MEMBER_OF: '#a442f5',
+    FOUNDED: '#4287f5',
+    CEO_OF: '#f58442',
+    PRESIDENT_OF: '#f58442',
+    CHAIRMAN_OF: '#f58442',
+    MANAGED_BY: '#f542e0',
+    PROPELLED: '#42f5d7',
+    RELATED_TO: '#718096',
+    default: '#718096'
+};
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeGraph();
+});
+
+function initializeGraph() {
+    // Prepare nodes
+    allNodes = graphData.nodes.map(node => ({
+        id: node.id,
+        label: node.label,
+        group: node.group,
+        title: formatNodeTooltip(node),
+        color: colors[node.group] || '#999',
+        shape: getNodeShape(node.group),
+        size: getNodeSize(node),
+        font: { color: '#333', size: 14 },
+        ...node.properties
+    }));
+
+    // Prepare edges
+    allEdges = graphData.edges.map(edge => ({
+        from: edge.from,
+        to: edge.to,
+        label: edge.label,
+        title: formatEdgeTooltip(edge),
+        color: { color: edgeColors[edge.label] || edgeColors.default },
+        arrows: 'to',
+        font: { size: 10, align: 'middle' },
+        width: getEdgeWidth(edge),
+        ...edge.properties
+    }));
+
+    originalData = {
+        nodes: new vis.DataSet(allNodes),
+        edges: new vis.DataSet(allEdges)
+    };
+
+    // Network options
+    const options = {
+        nodes: {
+            borderWidth: 2,
+            borderWidthSelected: 3,
+            font: {
+                size: 14,
+                face: 'Arial'
+            }
+        },
+        edges: {
+            width: 2,
+            selectionWidth: 3,
+            smooth: {
+                type: 'continuous',
+                roundness: 0.5
+            }
+        },
+        physics: {
+            enabled: true,
+            stabilization: {
+                iterations: 200
+            },
+            barnesHut: {
+                gravitationalConstant: -10000,
+                centralGravity: 0.3,
+                springLength: 150,
+                springConstant: 0.04,
+                damping: 0.09
+            }
+        },
+        interaction: {
+            hover: true,
+            navigationButtons: true,
+            keyboard: true,
+            tooltipDelay: 100
+        },
+        layout: {
+            improvedLayout: true,
+            hierarchical: false
+        }
+    };
+
+    // Create network
+    const container = document.getElementById('network');
+    network = new vis.Network(container, originalData, options);
+
+    // Event listeners
+    network.on('click', function(params) {
+        if (params.nodes.length > 0) {
+            showNodeInfo(params.nodes[0]);
+        }
+    });
+
+    network.on('stabilizationIterationsDone', function() {
+        hideLoading();
+        updateStats();
+    });
+
+    network.on('stabilized', function() {
+        hideLoading();
+    });
+
+    // Hide loading after initial render
+    setTimeout(hideLoading, 2000);
+}
+
+function getNodeShape(group) {
+    const shapes = {
+        Organization: 'box',
+        Person: 'dot',
+        Group: 'star',
+        Product: 'diamond',
+        Event: 'triangle',
+        Concept: 'hexagon',
+        Topic: 'ellipse'
+    };
+    return shapes[group] || 'dot';
+}
+
+function getNodeSize(node) {
+    if (node.properties && node.properties.market_cap_usd) {
+        return Math.max(30, Math.min(60, node.properties.market_cap_usd / 100000000));
+    }
+    if (node.properties && node.properties.shares) {
+        return Math.max(15, Math.min(40, node.properties.shares / 500000));
+    }
+    if (node.group === 'Organization') return 30;
+    if (node.group === 'Group') return 35;
+    return 20;
+}
+
+function getEdgeWidth(edge) {
+    if (edge.properties && edge.properties.percentage) {
+        return Math.max(1, Math.min(5, edge.properties.percentage / 5));
+    }
+    if (edge.label === 'OWNS_SHARES_IN') return 3;
+    if (edge.label === 'SUBSIDIARY_OF') return 2.5;
+    return 1.5;
+}
+
+function formatNodeTooltip(node) {
+    const props = node.properties;
+    let tooltip = `<b>${node.label}</b>`;
+    
+    if (props.type) tooltip += `<br>Type: ${props.type}`;
+    if (props.role) tooltip += `<br>Role: ${props.role}`;
+    if (props.shares) tooltip += `<br>Shares: ${props.shares.toLocaleString()}`;
+    if (props.percentage) tooltip += `<br>Ownership: ${props.percentage}%`;
+    if (props.value_usd) {
+        const value = (props.value_usd / 1000000).toFixed(2);
+        tooltip += `<br>Value: $${value}M`;
+    }
+    if (props.market_cap_usd) {
+        const cap = (props.market_cap_usd / 1000000000).toFixed(2);
+        tooltip += `<br>Market Cap: $${cap}B`;
+    }
+    
+    return tooltip;
+}
+
+function formatEdgeTooltip(edge) {
+    let tooltip = `<b>${edge.label.replace(/_/g, ' ')}</b>`;
+    
+    if (edge.properties) {
+        if (edge.properties.shares) {
+            tooltip += `<br>Shares: ${edge.properties.shares.toLocaleString()}`;
+        }
+        if (edge.properties.percentage) {
+            tooltip += `<br>Percentage: ${edge.properties.percentage}%`;
+        }
+        if (edge.properties.value_usd) {
+            const value = (edge.properties.value_usd / 1000000).toFixed(2);
+            tooltip += `<br>Value: $${value}M`;
+        }
+        if (edge.properties.ownership_percentage) {
+            tooltip += `<br>Ownership: ${edge.properties.ownership_percentage}%`;
+        }
+    }
+    
+    return tooltip;
+}
+
+function showNodeInfo(nodeId) {
+    const node = allNodes.find(n => n.id === nodeId);
+    if (!node) return;
+    
+    const infoPanel = document.getElementById('node-info');
+    const infoContent = document.getElementById('node-info-content');
+    
+    let html = `<h5>${node.label}</h5>`;
+    html += `<p><strong>Type:</strong> ${node.group}</p>`;
+    
+    Object.keys(node).forEach(key => {
+        if (!['id', 'label', 'group', 'title', 'color', 'shape', 'size', 'font', 'x', 'y'].includes(key)) {
+            const value = node[key];
+            if (value !== null && value !== undefined) {
+                html += `<p><strong>${key.replace(/_/g, ' ')}:</strong> ${formatValue(value)}</p>`;
+            }
+        }
+    });
+    
+    infoContent.innerHTML = html;
+    infoPanel.style.display = 'block';
+}
+
+function formatValue(value) {
+    if (typeof value === 'number') {
+        if (value > 1000000) {
+            return `$${(value / 1000000).toFixed(2)}M`;
+        }
+        return value.toLocaleString();
+    }
+    return value;
+}
+
+function updateStats() {
+    const statsContent = document.getElementById('stats-content');
+    const nodeCount = network.body.data.nodes.length;
+    const edgeCount = network.body.data.edges.length;
+    
+    const nodeTypes = {};
+    allNodes.forEach(node => {
+        nodeTypes[node.group] = (nodeTypes[node.group] || 0) + 1;
+    });
+    
+    let html = `<p><strong>Total Nodes:</strong> ${nodeCount}</p>`;
+    html += `<p><strong>Total Relationships:</strong> ${edgeCount}</p>`;
+    html += `<h5>Node Distribution:</h5>`;
+    Object.keys(nodeTypes).forEach(type => {
+        html += `<p>${type}: ${nodeTypes[type]}</p>`;
+    });
+    
+    statsContent.innerHTML = html;
+}
+
 function hideLoading() {
     const loading = document.getElementById('loading');
     if (loading) {
@@ -10,7 +273,6 @@ function hideLoading() {
     }
 }
 
-// Utility function to show loading spinner
 function showLoading() {
     const loading = document.getElementById('loading');
     if (loading) {
@@ -18,338 +280,127 @@ function showLoading() {
     }
 }
 
-// Toggle configuration panel
-function toggleConfig() {
-    const panel = document.getElementById('config-panel');
-    const currentDisplay = window.getComputedStyle(panel).display;
-    panel.style.display = currentDisplay === 'none' ? 'block' : 'none';
-}
-
-// Update statistics
-function updateStats(nodes, relationships) {
-    const stats = document.getElementById('stats');
-    if (stats) {
-        stats.innerHTML = `
-            <strong>Graph Statistics:</strong> 
-            ${nodes || '?'} nodes | 
-            ${relationships || '?'} relationships
-        `;
-        stats.style.display = 'block';
-    }
-}
-
-// Connect to Neo4J and initialize visualization
-function connectAndVisualize() {
-    const uri = document.getElementById('neo4j-uri').value.trim();
-    const user = document.getElementById('neo4j-user').value.trim();
-    const password = document.getElementById('neo4j-password').value.trim();
-
-    // Validation
-    if (!uri || !user || !password) {
-        alert('⚠️ Please fill in all connection details');
-        return;
-    }
-
-    if (!uri.startsWith('bolt://') && !uri.startsWith('neo4j://') && !uri.startsWith('neo4j+s://')) {
-        alert('⚠️ URI should start with bolt://, neo4j://, or neo4j+s://');
-        return;
-    }
-
-    showLoading();
-
-    // NeoVis configuration
-    config = {
-        containerId: "viz",
-        neo4j: {
-            serverUrl: uri,
-            serverUser: user,
-            serverPassword: password
-        },
-        visConfig: {
-            nodes: {
-                font: {
-                    size: 14,
-                    face: 'Arial'
-                }
-            },
-            edges: {
-                arrows: {
-                    to: { enabled: true, scaleFactor: 0.5 }
-                },
-                font: {
-                    size: 12,
-                    align: 'top'
-                }
-            },
-            physics: {
-                enabled: true,
-                stabilization: {
-                    iterations: 200
-                },
-                barnesHut: {
-                    gravitationalConstant: -8000,
-                    springConstant: 0.04,
-                    springLength: 95
-                }
-            },
-            interaction: {
-                hover: true,
-                navigationButtons: true,
-                keyboard: true
-            }
-        },
-        labels: {
-            "Organization": {
-                label: "name",
-                value: "market_cap_usd",
-                [NeoVis.NEOVIS_ADVANCED_CONFIG]: {
-                    function: {
-                        title: (node) => {
-                            let title = `<b>${node.properties.name}</b>`;
-                            if (node.properties.type) title += `\nType: ${node.properties.type}`;
-                            if (node.properties.market_cap_usd) {
-                                const cap = (node.properties.market_cap_usd / 1000000000).toFixed(2);
-                                title += `\nMarket Cap: $${cap}B`;
-                            }
-                            if (node.properties.founded) title += `\nFounded: ${node.properties.founded}`;
-                            return title;
-                        }
-                    },
-                    static: {
-                        color: "#4287f5",
-                        shape: "box",
-                        size: 25
-                    }
-                }
-            },
-            "Person": {
-                label: "name",
-                value: "shares",
-                [NeoVis.NEOVIS_ADVANCED_CONFIG]: {
-                    function: {
-                        title: (node) => {
-                            let title = `<b>${node.properties.name}</b>`;
-                            if (node.properties.role) title += `\nRole: ${node.properties.role}`;
-                            if (node.properties.shares) {
-                                title += `\nShares: ${node.properties.shares.toLocaleString()}`;
-                            }
-                            if (node.properties.ownership_percentage) {
-                                title += `\nOwnership: ${node.properties.ownership_percentage}%`;
-                            }
-                            if (node.properties.value_usd) {
-                                const value = (node.properties.value_usd / 1000000).toFixed(2);
-                                title += `\nValue: $${value}M`;
-                            }
-                            return title;
-                        }
-                    },
-                    static: {
-                        color: "#f54242",
-                        shape: "dot",
-                        size: 20
-                    }
-                }
-            },
-            "Group": {
-                label: "name",
-                [NeoVis.NEOVIS_ADVANCED_CONFIG]: {
-                    function: {
-                        title: (node) => {
-                            let title = `<b>${node.properties.name}</b>`;
-                            if (node.properties.type) title += `\nType: ${node.properties.type}`;
-                            if (node.properties.members_count) title += `\nMembers: ${node.properties.members_count}`;
-                            return title;
-                        }
-                    },
-                    static: {
-                        color: "#f542e0",
-                        shape: "star",
-                        size: 25
-                    }
-                }
-            },
-            "Product": {
-                label: "name",
-                [NeoVis.NEOVIS_ADVANCED_CONFIG]: {
-                    static: {
-                        color: "#42f5d7",
-                        shape: "diamond"
-                    }
-                }
-            },
-            "Event": {
-                label: "name",
-                [NeoVis.NEOVIS_ADVANCED_CONFIG]: {
-                    static: {
-                        color: "#f5d742",
-                        shape: "triangle"
-                    }
-                }
-            }
-        },
-        relationships: {
-            "OWNS_SHARES_IN": {
-                [NeoVis.NEOVIS_ADVANCED_CONFIG]: {
-                    function: {
-                        title: (edge) => {
-                            let title = "OWNS SHARES IN";
-                            if (edge.properties.shares) {
-                                title += `\nShares: ${edge.properties.shares.toLocaleString()}`;
-                            }
-                            if (edge.properties.percentage) {
-                                title += `\nPercentage: ${edge.properties.percentage}%`;
-                            }
-                            if (edge.properties.value_usd) {
-                                const value = (edge.properties.value_usd / 1000000).toFixed(2);
-                                title += `\nValue: $${value}M`;
-                            }
-                            return title;
-                        }
-                    },
-                    static: {
-                        color: "#42f5a1",
-                        width: 2
-                    }
-                }
-            },
-            "SUBSIDIARY_OF": {
-                [NeoVis.NEOVIS_ADVANCED_CONFIG]: {
-                    function: {
-                        title: (edge) => {
-                            let title = "SUBSIDIARY OF";
-                            if (edge.properties.ownership_percentage) {
-                                title += `\nOwnership: ${edge.properties.ownership_percentage}%`;
-                            }
-                            if (edge.properties.acquisition_year) {
-                                title += `\nAcquired: ${edge.properties.acquisition_year}`;
-                            }
-                            return title;
-                        }
-                    },
-                    static: {
-                        color: "#f5a442",
-                        width: 2
-                    }
-                }
-            },
-            "MEMBER_OF": {
-                [NeoVis.NEOVIS_ADVANCED_CONFIG]: {
-                    static: {
-                        color: "#a442f5",
-                        width: 1.5
-                    }
-                }
-            },
-            "CEO_OF": {
-                [NeoVis.NEOVIS_ADVANCED_CONFIG]: {
-                    static: {
-                        color: "#f58442",
-                        width: 2
-                    }
-                }
-            },
-            "PRESIDENT_OF": {
-                [NeoVis.NEOVIS_ADVANCED_CONFIG]: {
-                    static: {
-                        color: "#f58442",
-                        width: 2
-                    }
-                }
-            }
-        },
-        initialCypher: "MATCH (n)-[r]->(m) RETURN n,r,m LIMIT 50"
-    };
-
-    try {
-        viz = new NeoVis.default(config);
-        
-        viz.registerOnEvent("completed", () => {
-            hideLoading();
-            document.getElementById('controls').style.display = 'block';
-            document.getElementById('legend').style.display = 'block';
-            document.getElementById('config-panel').style.display = 'none';
-            console.log('✅ Visualization loaded successfully');
-        });
-
-        viz.registerOnEvent("error", (error) => {
-            hideLoading();
-            console.error('❌ Visualization error:', error);
-            alert('❌ Connection failed. Please check your credentials and try again.\n\nError: ' + error.message);
-        });
-
-        viz.render();
-        
-    } catch (error) {
-        hideLoading();
-        console.error('❌ Connection error:', error);
-        alert('❌ Connection failed: ' + error.message);
-    }
-}
-
-// View functions
+// Filter functions
 function loadFullGraph() {
-    showLoading();
-    viz.renderWithCypher("MATCH (n)-[r]->(m) RETURN n,r,m LIMIT 300");
-    viz.registerOnEvent("completed", hideLoading);
+    network.setData(originalData);
+    network.fit();
+    updateStats();
 }
 
-function loadOwnershipView() {
+function filterByType(type) {
     showLoading();
-    viz.renderWithCypher(`
-        MATCH (owner)-[r:OWNS_SHARES_IN]->(hybe:Organization {name: 'HYBE'})
-        RETURN owner, r, hybe
-        ORDER BY r.percentage DESC
-    `);
-    viz.registerOnEvent("completed", hideLoading);
+    
+    let nodesToShow = [];
+    let edgesToShow = [];
+    
+    if (type === 'ownership') {
+        // Show HYBE and all direct shareholders
+        const hybeNode = allNodes.find(n => n.id === 'ORG001');
+        nodesToShow.push(hybeNode);
+        
+        allEdges.forEach(edge => {
+            if (edge.label === 'OWNS_SHARES_IN' && edge.to === 'ORG001') {
+                edgesToShow.push(edge);
+                const fromNode = allNodes.find(n => n.id === edge.from);
+                if (fromNode && !nodesToShow.find(n => n.id === fromNode.id)) {
+                    nodesToShow.push(fromNode);
+                }
+            }
+        });
+    } else if (type === 'subsidiaries') {
+        // Show HYBE and all subsidiaries
+        const hybeNode = allNodes.find(n => n.id === 'ORG001');
+        nodesToShow.push(hybeNode);
+        
+        allEdges.forEach(edge => {
+            if (edge.label === 'SUBSIDIARY_OF' && edge.to === 'ORG001') {
+                edgesToShow.push(edge);
+                const fromNode = allNodes.find(n => n.id === edge.from);
+                if (fromNode && !nodesToShow.find(n => n.id === fromNode.id)) {
+                    nodesToShow.push(fromNode);
+                }
+            }
+        });
+        
+        // Add artists managed by subsidiaries
+        edgesToShow.slice().forEach(edge => {
+            const subId = edge.from;
+            allEdges.forEach(e => {
+                if (e.label === 'MANAGED_BY' && e.to === subId) {
+                    edgesToShow.push(e);
+                    const artistNode = allNodes.find(n => n.id === e.from);
+                    if (artistNode && !nodesToShow.find(n => n.id === artistNode.id)) {
+                        nodesToShow.push(artistNode);
+                    }
+                }
+            });
+        });
+    } else if (type === 'bts') {
+        // Show BTS network
+        const btsNode = allNodes.find(n => n.id === 'GRP001');
+        const hybeNode = allNodes.find(n => n.id === 'ORG001');
+        nodesToShow.push(btsNode, hybeNode);
+        
+        // Add all BTS members
+        allEdges.forEach(edge => {
+            if (edge.to === 'GRP001' && edge.label === 'MEMBER_OF') {
+                edgesToShow.push(edge);
+                const memberNode = allNodes.find(n => n.id === edge.from);
+                if (memberNode && !nodesToShow.find(n => n.id === memberNode.id)) {
+                    nodesToShow.push(memberNode);
+                }
+                
+                // Add member's ownership relationship
+                allEdges.forEach(e => {
+                    if (e.from === edge.from && e.label === 'OWNS_SHARES_IN') {
+                        edgesToShow.push(e);
+                    }
+                });
+            }
+        });
+        
+        // Add BTS propelled relationship
+        allEdges.forEach(edge => {
+            if (edge.from === 'GRP001' && edge.label === 'PROPELLED') {
+                edgesToShow.push(edge);
+            }
+        });
+    } else if (type === 'major-shareholders') {
+        // Show shareholders with >5% ownership
+        const hybeNode = allNodes.find(n => n.id === 'ORG001');
+        nodesToShow.push(hybeNode);
+        
+        allEdges.forEach(edge => {
+            if (edge.label === 'OWNS_SHARES_IN' && edge.to === 'ORG001' && 
+                edge.properties && edge.properties.percentage >= 5) {
+                edgesToShow.push(edge);
+                const fromNode = allNodes.find(n => n.id === edge.from);
+                if (fromNode && !nodesToShow.find(n => n.id === fromNode.id)) {
+                    nodesToShow.push(fromNode);
+                }
+            }
+        });
+    }
+    
+    network.setData({
+        nodes: new vis.DataSet(nodesToShow),
+        edges: new vis.DataSet(edgesToShow)
+    });
+    
+    setTimeout(() => {
+        network.fit();
+        hideLoading();
+        updateStats();
+    }, 500);
 }
 
-function loadSubsidiaries() {
-    showLoading();
-    viz.renderWithCypher(`
-        MATCH (sub)-[r:SUBSIDIARY_OF]->(hybe:Organization {name: 'HYBE'})
-        OPTIONAL MATCH (group:Group)-[:MANAGED_BY]->(sub)
-        RETURN sub, r, hybe, group
-    `);
-    viz.registerOnEvent("completed", hideLoading);
+function resetView() {
+    network.fit();
 }
 
-function loadBTSNetwork() {
-    showLoading();
-    viz.renderWithCypher(`
-        MATCH path = (member:Person)-[:MEMBER_OF]->(bts:Group {name: 'BTS'})
-        OPTIONAL MATCH (member)-[owns:OWNS_SHARES_IN]->(hybe:Organization {name: 'HYBE'})
-        OPTIONAL MATCH (bts)-[rel]-(other)
-        RETURN path, member, owns, hybe, bts, rel, other
-        LIMIT 100
-    `);
-    viz.registerOnEvent("completed", hideLoading);
-}
-
-function loadTopShareholders() {
-    showLoading();
-    viz.renderWithCypher(`
-        MATCH (shareholder)-[r:OWNS_SHARES_IN]->(hybe:Organization {name: 'HYBE'})
-        WHERE r.percentage >= 0.5
-        RETURN shareholder, r, hybe
-        ORDER BY r.percentage DESC
-    `);
-    viz.registerOnEvent("completed", hideLoading);
-}
-
-function loadCorporateStructure() {
-    showLoading();
-    viz.renderWithCypher(`
-        MATCH (hybe:Organization {name: 'HYBE'})
-        OPTIONAL MATCH (hybe)<-[sub:SUBSIDIARY_OF]-(subsidiary)
-        OPTIONAL MATCH (hybe)<-[own:OWNS_SHARES_IN]-(major_shareholder)
-        WHERE own.percentage > 5
-        OPTIONAL MATCH (leader)-[lead:CEO_OF|PRESIDENT_OF|CHAIRMAN_OF]->(hybe)
-        RETURN hybe, sub, subsidiary, own, major_shareholder, lead, leader
-    `);
-    viz.registerOnEvent("completed", hideLoading);
-}
-
-// Initialize on page load
-console.log('🎵 HYBE Knowledge Graph Viewer loaded');
-console.log('📊 Created by @dkt2025');
+// Initialize
+console.log('📊 Article2Neo4J loaded');
+console.log('🎵 Demo: HYBE Ownership Structure');
+console.log(`📈 ${allNodes ? allNodes.length : 0} nodes, ${allEdges ? allEdges.length : 0} relationships`);
+console.log('👤 Created by @dkt2025');
 console.log('🔗 GitHub: https://github.com/dkt2025/Article2Neo4J');

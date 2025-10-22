@@ -3,24 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Article2Neo4J - Interactive Visualization</title>
-    <meta name="description" content="Interactive Neo4J knowledge graph visualization of K-pop giant HYBE's ownership structure, subsidiaries, and corporate relationships">
+    <title>Article2Neo4J - Interactive Knowledge Graph Visualization</title>
+    <meta name="description" content="Convert articles into interactive Neo4J knowledge graph visualizations">
     <meta name="author" content="dkt2025">
     
     <!-- Open Graph / Social Media -->
     <meta property="og:type" content="website">
     <meta property="og:title" content="Article2Neo4J">
-    <meta property="og:description" content="Interactive visualization of K-pop giant HYBE's ownership structure">
+    <meta property="og:description" content="Convert articles into interactive Neo4J knowledge graph visualizations">
     <meta property="og:url" content="https://dkt2025.github.io/Article2Neo4J/">
     
-    <script src="https://unpkg.com/neovis.js@2.0.2"></script>
+    <!-- Vis.js for graph visualization -->
+    <script src="https://unpkg.com/vis-network@9.1.2/dist/vis-network.min.js"></script>
+    <link href="https://unpkg.com/vis-network@9.1.2/dist/dist/vis-network.min.css" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <header class="header">
             <h1>🎵 Article2Neo4J</h1>
-            <p class="subtitle">Interactive visualization of K-pop giant HYBE's ownership structure and corporate relationships</p>
+            <p class="subtitle">Interactive knowledge graph visualization of K-pop giant HYBE's ownership structure and corporate relationships</p>
             <div class="info">
                 <span class="badge">Data as of June 30, 2024</span>
                 <span class="badge">Source: <a href="https://www.musicbusinessworldwide.com/who-owns-k-pop-giant-hybe/" target="_blank">MBW Article</a></span>
@@ -28,118 +30,108 @@
             </div>
         </header>
 
-        <div class="config-form" id="config-panel">
-            <h3>🔌 Connection Settings</h3>
-            <p class="config-help">Connect to your Neo4J database to visualize the HYBE knowledge graph</p>
-            
-            <div class="form-group">
-                <label for="neo4j-uri">Neo4J URI (bolt://...):</label>
-                <input type="text" id="neo4j-uri" placeholder="bolt://your-instance.databases.neo4j.io">
-                <small>Get this from your Neo4J Aura dashboard</small>
-            </div>
-            
-            <div class="form-group">
-                <label for="neo4j-user">Username:</label>
-                <input type="text" id="neo4j-user" value="neo4j">
-            </div>
-            
-            <div class="form-group">
-                <label for="neo4j-password">Password:</label>
-                <input type="password" id="neo4j-password" placeholder="Your database password">
-            </div>
-            
-            <div class="button-group">
-                <button class="btn btn-primary" onclick="connectAndVisualize()">🚀 Connect & Visualize</button>
-                <button class="btn btn-secondary" onclick="toggleConfig()">Hide Config</button>
-            </div>
-
-            <div class="help-section">
-                <h4>📚 Don't have a Neo4J database?</h4>
-                <ol>
-                    <li><a href="https://neo4j.com/cloud/aura-free/" target="_blank">Create a free Neo4J Aura account</a></li>
-                    <li>Create a new database instance</li>
-                    <li>Import the data using the <a href="https://github.com/dkt2025/Article2Neo4J/tree/main/cypher-scripts" target="_blank">Cypher scripts</a></li>
-                    <li>Return here with your connection details</li>
-                </ol>
-            </div>
-        </div>
-
-        <div class="controls" id="controls" style="display:none;">
+        <div class="controls">
             <h3>📊 View Options</h3>
             <div class="button-grid">
                 <button class="btn btn-view" onclick="loadFullGraph()">
                     <span class="icon">🌐</span>
                     <span>Full Graph</span>
                 </button>
-                <button class="btn btn-view" onclick="loadOwnershipView()">
+                <button class="btn btn-view" onclick="filterByType('ownership')">
                     <span class="icon">💰</span>
                     <span>Ownership Structure</span>
                 </button>
-                <button class="btn btn-view" onclick="loadSubsidiaries()">
+                <button class="btn btn-view" onclick="filterByType('subsidiaries')">
                     <span class="icon">🏢</span>
                     <span>Subsidiaries</span>
                 </button>
-                <button class="btn btn-view" onclick="loadBTSNetwork()">
+                <button class="btn btn-view" onclick="filterByType('bts')">
                     <span class="icon">⭐</span>
                     <span>BTS Network</span>
                 </button>
-                <button class="btn btn-view" onclick="loadTopShareholders()">
+                <button class="btn btn-view" onclick="filterByType('major-shareholders')">
                     <span class="icon">📈</span>
-                    <span>Top Shareholders</span>
+                    <span>Major Shareholders (>5%)</span>
                 </button>
-                <button class="btn btn-view" onclick="loadCorporateStructure()">
-                    <span class="icon">🏗️</span>
-                    <span>Corporate Structure</span>
+                <button class="btn btn-view" onclick="resetView()">
+                    <span class="icon">🔄</span>
+                    <span>Reset View</span>
                 </button>
             </div>
-            <button class="btn btn-secondary btn-small" onclick="toggleConfig()">⚙️ Show Config</button>
         </div>
 
-        <div class="legend" id="legend" style="display:none;">
+        <div class="legend">
             <h4>Legend</h4>
-            <div class="legend-item">
-                <span class="legend-color" style="background: #4287f5;"></span>
-                <span>Organization</span>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4287f5;"></div>
+                    <span>Organization</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f54242;"></div>
+                    <span>Person</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f542e0;"></div>
+                    <span>Group</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #42f5d7;"></div>
+                    <span>Product</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f5d742;"></div>
+                    <span>Event</span>
+                </div>
             </div>
-            <div class="legend-item">
-                <span class="legend-color" style="background: #f54242;"></span>
-                <span>Person</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-color" style="background: #f542e0;"></span>
-                <span>Group</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-color" style="background: #42f5a1;"></span>
-                <span>Ownership</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-color" style="background: #f5a442;"></span>
-                <span>Subsidiary</span>
+            <div class="legend-relationships">
+                <h5>Relationships</h5>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #42f5a1;"></div>
+                    <span>Ownership</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #f5a442;"></div>
+                    <span>Subsidiary</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #a442f5;"></div>
+                    <span>Membership</span>
+                </div>
             </div>
         </div>
 
         <div id="viz-container">
-            <div id="viz"></div>
+            <div id="network"></div>
             <div id="loading" class="loading">
                 <div class="spinner"></div>
                 <p>Loading visualization...</p>
             </div>
         </div>
 
+        <div class="stats-panel" id="stats">
+            <h4>Graph Statistics</h4>
+            <div id="stats-content"></div>
+        </div>
+
+        <div class="info-panel" id="node-info" style="display: none;">
+            <h4>Node Information</h4>
+            <div id="node-info-content"></div>
+        </div>
+
         <footer class="footer">
-            <div class="stats" id="stats" style="display:none;"></div>
             <div class="footer-content">
                 <p>
                     Created by <a href="https://github.com/dkt2025" target="_blank">@dkt2025</a> | 
                     <a href="https://github.com/dkt2025/Article2Neo4J" target="_blank">View on GitHub</a> | 
                     Data Source: <a href="https://www.musicbusinessworldwide.com/who-owns-k-pop-giant-hybe/" target="_blank">Music Business Worldwide</a>
                 </p>
-                <p class="small">Built with <a href="https://neo4j.com/" target="_blank">Neo4J</a> and <a href="https://github.com/neo4j-contrib/neovis.js/" target="_blank">neovis.js</a></p>
+                <p class="small">Built with <a href="https://neo4j.com/" target="_blank">Neo4J</a> and <a href="https://visjs.org/" target="_blank">Vis.js</a></p>
             </div>
         </footer>
     </div>
 
+    <script src="graph-data.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
