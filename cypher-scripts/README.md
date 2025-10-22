@@ -1,4 +1,4 @@
-# HYBE Ownership Knowledge Graph - Neo4J Import Guide
+# Article2Neo4J - Neo4J Import Guide
 
 This package contains Cypher scripts to import the HYBE ownership structure into Neo4J Aura.
 
