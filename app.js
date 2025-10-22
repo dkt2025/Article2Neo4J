@@ -8,29 +8,29 @@ let allNodes;
 let allEdges;
 let originalData;
 
-// Color scheme
+// Color scheme - Optimized for dark mode with high contrast
 const colors = {
-    Organization: '#4287f5',
-    Person: '#f54242',
-    Group: '#f542e0',
-    Product: '#42f5d7',
-    Event: '#f5d742',
-    Concept: '#a442f5',
-    Topic: '#f5a442'
+    Organization: '#5b9dff',
+    Person: '#ff6b9d',
+    Group: '#ff7ce5',
+    Product: '#5cffe7',
+    Event: '#ffd95c',
+    Concept: '#b77cff',
+    Topic: '#ff9d5c'
 };
 
 const edgeColors = {
-    OWNS_SHARES_IN: '#42f5a1',
-    SUBSIDIARY_OF: '#f5a442',
-    MEMBER_OF: '#a442f5',
-    FOUNDED: '#4287f5',
-    CEO_OF: '#f58442',
-    PRESIDENT_OF: '#f58442',
-    CHAIRMAN_OF: '#f58442',
-    MANAGED_BY: '#f542e0',
-    PROPELLED: '#42f5d7',
-    RELATED_TO: '#718096',
-    default: '#718096'
+    OWNS_SHARES_IN: '#5cffe7',
+    SUBSIDIARY_OF: '#ff9d5c',
+    MEMBER_OF: '#b77cff',
+    FOUNDED: '#5b9dff',
+    CEO_OF: '#ffa85c',
+    PRESIDENT_OF: '#ffa85c',
+    CHAIRMAN_OF: '#ffa85c',
+    MANAGED_BY: '#ff7ce5',
+    PROPELLED: '#5cffe7',
+    RELATED_TO: '#8ba3c7',
+    default: '#8ba3c7'
 };
 
 // Initialize on page load
@@ -45,10 +45,23 @@ function initializeGraph() {
         label: node.label,
         group: node.group,
         title: formatNodeTooltip(node),
-        color: colors[node.group] || '#999',
+        color: {
+            background: colors[node.group] || '#999',
+            border: colors[node.group] || '#999',
+            highlight: {
+                background: colors[node.group] || '#999',
+                border: '#ffffff'
+            }
+        },
         shape: getNodeShape(node.group),
         size: getNodeSize(node),
-        font: { color: '#333', size: 14 },
+        font: { 
+            color: '#ffffff',
+            size: 15,
+            face: 'Inter, -apple-system, sans-serif',
+            strokeWidth: 3,
+            strokeColor: '#050814'
+        },
         ...node.properties
     }));
 
@@ -58,9 +71,19 @@ function initializeGraph() {
         to: edge.to,
         label: edge.label,
         title: formatEdgeTooltip(edge),
-        color: { color: edgeColors[edge.label] || edgeColors.default },
+        color: { 
+            color: edgeColors[edge.label] || edgeColors.default,
+            highlight: '#ffffff',
+            opacity: 0.8
+        },
         arrows: 'to',
-        font: { size: 10, align: 'middle' },
+        font: { 
+            size: 11,
+            align: 'middle',
+            color: '#e2edf7',
+            strokeWidth: 2,
+            strokeColor: '#050814'
+        },
         width: getEdgeWidth(edge),
         ...edge.properties
     }));
@@ -74,15 +97,32 @@ function initializeGraph() {
     const options = {
         nodes: {
             borderWidth: 2,
-            borderWidthSelected: 3,
+            borderWidthSelected: 4,
+            shadow: {
+                enabled: true,
+                color: 'rgba(91, 157, 255, 0.4)',
+                size: 10,
+                x: 0,
+                y: 0
+            },
             font: {
-                size: 14,
-                face: 'Arial'
+                size: 15,
+                face: 'Inter, -apple-system, sans-serif',
+                color: '#ffffff',
+                strokeWidth: 3,
+                strokeColor: '#050814'
             }
         },
         edges: {
             width: 2,
-            selectionWidth: 3,
+            selectionWidth: 4,
+            shadow: {
+                enabled: true,
+                color: 'rgba(91, 157, 255, 0.3)',
+                size: 5,
+                x: 0,
+                y: 0
+            },
             smooth: {
                 type: 'continuous',
                 roundness: 0.5
