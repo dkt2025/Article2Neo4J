@@ -1,12 +1,12 @@
-# 🎵 HYBE Ownership Knowledge Graph
+# 🎵 Article2Neo4J
 
-[![GitHub Pages](https://img.shields.io/badge/demo-live-success)](https://dkt2025.github.io/hybe-knowledge-graph/)
+Generated with GitHub Copilot and Neo4J Aura. Interactive Neo4J knowledge graph visualization of K-pop giant HYBE's ownership structure, subsidiaries, and corporate relationships.
+
+[![GitHub Pages](https://img.shields.io/badge/demo-live-success)](https://dkt2025.github.io/Article2Neo4J/)
 [![Neo4J](https://img.shields.io/badge/database-Neo4J-blue)](https://neo4j.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Interactive Neo4J knowledge graph visualization of K-pop giant HYBE's ownership structure, subsidiaries, and corporate relationships.
-
-![HYBE Knowledge Graph Preview](assets/preview.png)
+![Article2Neo4J Preview](assets/preview.png)
 
 ## 🌟 Features
 
@@ -18,24 +18,16 @@ Interactive Neo4J knowledge graph visualization of K-pop giant HYBE's ownership 
 
 ## 🚀 Live Demo
 
-**👉 [View Live Demo](https://dkt2025.github.io/hybe-knowledge-graph/)**
+**👉 [View Live Demo](https://dkt2025.github.io/Article2Neo4J/)**
 
 ## 📊 What's Inside
 
 The knowledge graph includes:
 
-- **41.65 million** HYBE shares tracked
 - **20+ organizations** including HYBE and all subsidiaries
 - **17 individuals** including executives and BTS members
 - **4 musical groups** (BTS, NewJeans, ENHYPEN, ILLIT)
-- **100+ relationships** mapping ownership, management, and corporate structure
 
-### Data Coverage
-
-- Ownership stakes from 0.0003% to 31.57%
-- Market capitalization: $5.37 billion (as of Sept 9, 2024)
-- Financial data in USD and KRW
-- Historical events from 2000-2024
 
 ## 🛠️ Setup Instructions
 
@@ -73,7 +65,7 @@ The knowledge graph includes:
 
 4. **Open the visualization**
    - Open `index.html` in your browser, or
-   - Visit the [live demo](https://dkt2025.github.io/hybe-knowledge-graph/)
+   - Visit the [live demo](https://dkt2025.github.io/Article2Neo4J/)
    - Enter your Neo4J connection details
    - Click "Connect & Visualize"
 
@@ -175,9 +167,9 @@ Published: September 10, 2024
 If you use this knowledge graph in your research or project, please cite:
 
 ```bibtex
-@misc{hybe-knowledge-graph-2025,
+@misc{Article2Neo4J,
   author = {dkt2025},
-  title = {HYBE Ownership Knowledge Graph},
+  title = {Article2Neo4J},
   year = {2025},
   publisher = {GitHub},
   url = {https://github.com/dkt2025/hybe-knowledge-graph}
@@ -199,7 +191,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 Created by [@dkt2025](https://github.com/dkt2025)
 
-Have questions or suggestions? [Open an issue](https://github.com/dkt2025/hybe-knowledge-graph/issues)!
+Have questions or suggestions? [Open an issue](https://github.com/dkt2025/Article2Neo4J/issues)!
 
 ---
 
